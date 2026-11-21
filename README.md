@@ -1,6 +1,14 @@
 # cmms-export-cleaner
 
-CMMS exports are rarely consistent. One request says "Bldg A Rm 101", the next says "BLDG-A / 102", dates arrive as `03/04/2026`, `5-Mar-2026` and `March 6, 2026`, and status text mixes "WIP", "done" and "Canceled". Reports built on that data count the same thing three ways. This tool reads such a CSV, maps the column names, normalizes the values, drops duplicate work order ids, and writes a clean file plus a separate file for rows it cannot trust. The sample data is synthetic.
+[![CI](https://github.com/yassine2med/cmms-export-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/yassine2med/cmms-export-cleaner/actions/workflows/ci.yml) ![Python](https://img.shields.io/badge/python-3.10%2B-3776ab) ![License](https://img.shields.io/badge/license-MIT-8fb08a)
+
+Normalizes a messy CMMS CSV export into a clean file plus a file of rejected rows.
+
+![Screenshot](docs/screenshot.png)
+
+## What it is for
+
+CMMS exports (from the system a facility team uses to track maintenance requests) are rarely consistent. One request says "Bldg A Rm 101", the next says "BLDG-A / 102", dates arrive as `03/04/2026`, `5-Mar-2026` and `March 6, 2026`, and status text mixes "WIP", "done" and "Canceled". Reports built on that data count the same thing three ways. A facility coordinator, maintenance planner or data analyst runs this tool before reporting or migrating data. It maps the column names, normalizes the values, drops duplicate work order ids, and writes a clean file plus a separate file for rows it cannot trust. The sample data is synthetic.
 
 ## Install
 
@@ -11,7 +19,18 @@ python -m pip install -e .
 
 No third-party packages are needed.
 
-## Usage
+## How to use
+
+| I want to | Command |
+| --- | --- |
+| Clean an export (writes `clean.csv` and `rejects.csv` in the current folder) | `python -m cmmsclean data/messy_export.csv` |
+| Choose the clean output file name (default `clean.csv`) | `python -m cmmsclean data/messy_export.csv -o out.csv` |
+| Choose the rejected rows file name (default `rejects.csv`) | `python -m cmmsclean data/messy_export.csv --rejects bad.csv` |
+| See all options | `python -m cmmsclean --help` |
+
+`rejects.csv` holds the rows with no id or an unreadable created date, with a `reason` column. It is only written when there are rejected rows.
+
+Worked example:
 
 ```
 python -m cmmsclean data/messy_export.csv -o clean.csv --rejects rejects.csv
@@ -39,7 +58,14 @@ WO-2002,"Building A, Room 102",In Progress,Emergency,2026-03-05,,No cooling in s
 WO-2003,"Building B, Room 210",Closed,Medium,2026-03-05,2026-03-09,Leaking faucet
 ```
 
-`rejects.csv` holds the rows with no id or an unreadable created date, with a `reason` column.
+First lines of `clean.csv`:
+
+```
+id,location,status,priority,created,closed,description
+WO-2001,"Building A, Room 101",Open,High,2026-03-04,,Thermostat not responding
+WO-2002,"Building A, Room 102",In Progress,Emergency,2026-03-05,,No cooling in server closet
+WO-2003,"Building B, Room 210",Closed,Medium,2026-03-05,2026-03-09,Leaking faucet
+```
 
 ## How it works
 
